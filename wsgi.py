@@ -1,10 +1,13 @@
-import click, pytest, sys
+import click, sys
+from flask import Flask
 from flask.cli import with_appcontext, AppGroup
 
 from App.database import db, get_migrate
 from App.models import User
 from App.main import create_app
-from App.controllers import ( create_user, get_all_users_json, get_all_users, initialize )
+from App.controllers import ( create_user, get_all_users_json, get_all_users, initialize,
+                              create_resident, create_driver, create_stop_request,
+                              create_drive, get_driver_schedule, get_resident_inbox, print_all_data )
 
 
 # This commands file allow you to create convenient CLI commands for testing controllers
@@ -49,6 +52,72 @@ def list_user_command(format):
 app.cli.add_command(user_cli) # add the group to the cli
 
 '''
+Resident & Driver Commands Grouped under 'transport'
+'''
+transport_cli = AppGroup('transport', help='Resident and Driver object commands')
+
+@transport_cli.command('create-resident', help='Create a resident')
+@click.argument('name', default=None)
+def create_resident_command(name):
+    r = create_resident(name)
+    print(f'Resident created: id={r.id} name={r.name}')
+
+@transport_cli.command('create-driver', help='Create a driver')
+@click.argument('status', default=None)
+def create_driver_command(status):
+    d = create_driver(status)
+    print(f'Driver created: id={d.id} status={d.status}')
+
+@transport_cli.command('create-stop', help='Create a stop request for an existing drive and resident')
+@click.argument('resident_id', type=int)
+@click.argument('drive_id', type=int)
+@click.option('--street', default=None, help='Optional street name override; defaults to resident.street')
+def create_stop_command(resident_id, drive_id, street):
+    sr = create_stop_request(resident_id, drive_id, street)
+    if sr:
+        print(f'StopRequest created: id={sr.id} resident={sr.requestee_id} drive={sr.drive_id} street="{sr.street_name}"')
+    else:
+        print('Resident or Drive not found')
+
+@transport_cli.command('create-drive', help='Create a new drive for a driver')
+@click.argument('driver_id', type=int)
+@click.option('--when', default=None, help='ISO datetime string for drive time (optional)')
+@click.option('--location', default=None, help='Current location string (optional)')
+def create_drive_command(driver_id, when, location):
+    drive = create_drive(driver_id, when=when, current_location=location)
+    if drive:
+        print(f'Drive created: id={drive.id} driver_id={drive.driver_id} datetime={drive.datetime} location={drive.current_location}')
+    else:
+        print('Driver not found or error')
+
+@transport_cli.command('driver-schedule', help='Show driver schedule (drives)')
+@click.argument('driver_id', type=int)
+def driver_schedule_command(driver_id):
+    schedule = get_driver_schedule(driver_id)
+    if not schedule:
+        print('No schedule or driver not found')
+        return
+    for d in schedule:
+        print(f'Drive id={d.id} datetime={d.datetime} stops={[s.id for s in d.stops]}')
+
+@transport_cli.command('resident-inbox', help='Show resident inbox of stop requests')
+@click.argument('resident_id', type=int)
+@click.option('--street', default=None, help='Optional street name filter')
+def resident_inbox_command(resident_id, street):
+    inbox = get_resident_inbox(resident_id, street)
+    if not inbox:
+        print('No stop requests or resident not found')
+        return
+    for sr in inbox:
+        print(f'StopRequest id={sr.id} street="{sr.street_name}" resident_id={sr.requestee_id} created_at={sr.created_at}')
+
+@transport_cli.command('list-all-data', help='Pretty-print all data (users, drivers, drives, residents, stop requests)')
+def list_all_data_command():
+    print_all_data()
+
+app.cli.add_command(transport_cli)
+
+'''
 Test Commands
 '''
 
@@ -57,6 +126,12 @@ test = AppGroup('test', help='Testing commands')
 @test.command("user", help="Run User tests")
 @click.argument("type", default="all")
 def user_tests_command(type):
+    import importlib
+    try:
+        pytest = importlib.import_module('pytest')
+    except Exception:
+        print('pytest is not installed in this environment')
+        return
     if type == "unit":
         sys.exit(pytest.main(["-k", "UserUnitTests"]))
     elif type == "int":

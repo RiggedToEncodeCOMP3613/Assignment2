@@ -1,34 +1,33 @@
-[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/uwidcit/flaskmvc)
-<a href="https://render.com/deploy?repo=https://github.com/uwidcit/flaskmvc">
-  <img src="https://render.com/images/deploy-to-render-button.svg" alt="Deploy to Render">
-</a>
+# Flask MVC Template
+
+[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/uwidcit/flaskmvc)  
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/uwidcit/flaskmvc)
 
 ![Tests](https://github.com/uwidcit/flaskmvc/actions/workflows/dev.yml/badge.svg)
 
-# Flask MVC Template
-A template for flask applications structured in the Model View Controller pattern [Demo](https://dcit-flaskmvc.herokuapp.com/). [Postman Collection](https://documenter.getpostman.com/view/583570/2s83zcTnEJ)
-
+A template for flask applications structured in the Model View Controller pattern. Demo: https://dcit-flaskmvc.herokuapp.com/. Postman Collection: https://documenter.getpostman.com/view/583570/2s83zcTnEJ
 
 # Dependencies
-* Python3/pip3
+
+* Python 3 and pip
 * Packages listed in requirements.txt
 
 # Installing Dependencies
+
 ```bash
-$ pip install -r requirements.txt
+pip install -r requirements.txt
 ```
 
 # Configuration Management
 
-
-Configuration information such as the database url/port, credentials, API keys etc are to be supplied to the application. However, it is bad practice to stage production information in publicly visible repositories.
-Instead, all config is provided by a config file or via [environment variables](https://linuxize.com/post/how-to-set-and-list-environment-variables-in-linux/).
+Configuration information such as the database URL/port, credentials, API keys, etc. are supplied to the application via a config file or environment variables. Do not store production secrets in the repository.
 
 ## In Development
 
-When running the project in a development environment (such as gitpod) the app is configured via default_config.py file in the App folder. By default, the config for development uses a sqlite database.
+When running the project in development the app is configured via App/default_config.py. By default it uses a sqlite database.
 
 default_config.py
+
 ```python
 SQLALCHEMY_DATABASE_URI = "sqlite:///temp-database.db"
 SECRET_KEY = "secret key"
@@ -36,33 +35,15 @@ JWT_ACCESS_TOKEN_EXPIRES = 7
 ENV = "DEVELOPMENT"
 ```
 
-These values would be imported and added to the app in load_config() function in config.py
-
-config.py
-```python
-# must be updated to inlude addtional secrets/ api keys & use a gitignored custom-config file instad
-def load_config():
-    config = {'ENV': os.environ.get('ENV', 'DEVELOPMENT')}
-    delta = 7
-    if config['ENV'] == "DEVELOPMENT":
-        from .default_config import JWT_ACCESS_TOKEN_EXPIRES, SQLALCHEMY_DATABASE_URI, SECRET_KEY
-        config['SQLALCHEMY_DATABASE_URI'] = SQLALCHEMY_DATABASE_URI
-        config['SECRET_KEY'] = SECRET_KEY
-        delta = JWT_ACCESS_TOKEN_EXPIRES
-...
-```
+These values are imported in config.load_config().
 
 ## In Production
 
-When deploying your application to production/staging you must pass
-in configuration information via environment tab of your render project's dashboard.
-
-![perms](./images/fig1.png)
+When deploying to production/staging pass configuration via environment settings in your platform (for example, Render dashboard).
 
 # Flask Commands
 
-wsgi.py is a utility script for performing various tasks related to the project. You can use it to import and test any code in the project. 
-You just need create a manager command function, for example:
+wsgi.py exposes custom Flask CLI commands (AppGroup). Example of adding a user command to wsgi.py:
 
 ```python
 # inside wsgi.py
@@ -76,54 +57,192 @@ def create_user_command(username, password):
     create_user(username, password)
     print(f'{username} created!')
 
-app.cli.add_command(user_cli) # add the group to the cli
-
+app.cli.add_command(user_cli)
 ```
 
-Then execute the command invoking with flask cli with command name and the relevant parameters
+Run the command with the Flask CLI, providing the group and command name and arguments.
 
 ```bash
-$ flask user create bob bobpass
+flask user create bob bobpass
 ```
 
+# CLI Commands — Usage & Examples
+
+This project exposes several useful CLI commands. Below are concise usage examples. Replace placeholders (for example `username`) with real values.
+
+* Initialize the application database (custom command):
+
+```bash
+flask init
+```
+
+* Flask-Migrate database workflow (create / migrate / upgrade):
+
+```bash
+flask db init
+flask db migrate -m "Add new field"
+flask db upgrade
+```
+
+* Run the user create command defined in wsgi.py (example):
+
+```bash
+flask user create alice s3cr3t
+```
+
+* Run the project's test commands via the Flask CLI helper (example runs user tests):
+
+```bash
+# run all user tests
+flask test user
+
+# run only unit tests
+flask test user unit
+
+# run only integration tests
+flask test user int
+```
+
+* Run the development server with Flask (ensure FLASK_APP is set):
+
+Unix / macOS:
+
+```bash
+export FLASK_APP=wsgi.py
+export FLASK_ENV=development
+flask run
+```
+
+Windows (PowerShell):
+
+```powershell
+$env:FLASK_APP = "wsgi.py"
+$env:FLASK_ENV = "development"
+flask run
+```
+
+Windows (cmd.exe):
+
+```cmd
+set FLASK_APP=wsgi.py && set FLASK_ENV=development && flask run
+```
+
+* Run the production server with gunicorn (example binding and workers):
+
+```bash
+gunicorn wsgi:app -w 4 -b 0.0.0.0:8000
+```
+
+Notes:
+
+* On Windows you typically run development servers with the Flask CLI; gunicorn is generally used on Unix-based production servers.
+* If you use a virtual environment, activate it before running these commands so the correct Python environment and dependencies are used.
+
+# Transport CLI Commands (Driver & Resident)
+
+All commands are run from your project root (where wsgi.py is located).
+
+**On Windows, use PowerShell or cmd as shown in the general CLI section.**
+
+## Create a Resident
+
+```bash
+flask transport create-resident "Alice"
+```
+Creates a new resident named Alice.
+
+## Create a Driver
+
+```bash
+flask transport create-driver "active"
+```
+Creates a new driver with status "active".
+
+## Create a Stop Request
+
+```bash
+flask transport create-stop <resident_id> <drive_id> --street "Main St"
+```
+Creates a stop request for a resident and drive.
+- `<resident_id>`: The ID of the resident (integer)
+- `<drive_id>`: The ID of the drive (integer)
+- `--street`: (Optional) Override street name
+
+Example:
+```bash
+flask transport create-stop 1 2 --street "Main St"
+```
+
+## Create a Drive for a Driver
+
+```bash
+flask transport create-drive <driver_id> --when "2025-09-16T10:00:00" --location "Depot"
+```
+Creates a new drive for the driver with optional datetime and location.
+
+## Show Driver Schedule
+
+```bash
+flask transport driver-schedule <driver_id>
+```
+Lists all drives for the given driver.
+
+## Show Resident Inbox (Stop Requests)
+
+```bash
+flask transport resident-inbox <resident_id> --street "Main St"
+```
+Shows all stop requests for a resident, optionally filtered by street.
+
+## List All Data
+
+```bash
+flask transport list-all-data
+```
+Prints all users, drivers, drives, residents, and stop requests in the database.
 
 # Running the Project
 
-_For development run the serve command (what you execute):_
+For development run the Flask development server:
+
 ```bash
-$ flask run
+flask run
 ```
 
-_For production using gunicorn (what the production server executes):_
+For production using gunicorn:
+
 ```bash
-$ gunicorn wsgi:app
+gunicorn wsgi:app
 ```
 
 # Deploying
-You can deploy your version of this app to render by clicking on the "Deploy to Render" link above.
+
+You can deploy your version of this app to Render by clicking the Deploy to Render button above.
 
 # Initializing the Database
-When connecting the project to a fresh empty database ensure the appropriate configuration is set then file then run the following command. This must also be executed once when running the app on heroku by opening the heroku console, executing bash and running the command in the dyno.
+
+When connecting to a fresh database ensure the appropriate configuration is set then run:
 
 ```bash
-$ flask init
+flask init
 ```
 
 # Database Migrations
-If changes to the models are made, the database must be'migrated' so that it can be synced with the new models.
-Then execute following commands using manage.py. More info [here](https://flask-migrate.readthedocs.io/en/latest/)
+
+If changes to the models are made, migrate the database using Flask-Migrate. See the Flask-Migrate documentation for details.
 
 ```bash
-$ flask db init
-$ flask db migrate
-$ flask db upgrade
-$ flask db --help
+flask db init
+flask db migrate
+flask db upgrade
+flask db --help
 ```
 
 # Testing
 
 ## Unit & Integration
-Unit and Integration tests are created in the App/test. You can then create commands to run them. Look at the unit test command in wsgi.py for example
+
+Unit and Integration tests are defined in the tests/ folder. The project provides CLI helpers in wsgi.py to run test subsets. Example implementation for user tests in wsgi.py:
 
 ```python
 @test.command("user", help="Run User tests")
@@ -137,39 +256,37 @@ def user_tests_command(type):
         sys.exit(pytest.main(["-k", "User"]))
 ```
 
-You can then execute all user tests as follows
+Run all user tests:
 
 ```bash
-$ flask test user
+flask test user
 ```
 
-You can also supply "unit" or "int" at the end of the comand to execute only unit or integration tests.
-
-You can run all application tests with the following command
+Run the full test suite with pytest:
 
 ```bash
-$ pytest
+pytest
 ```
 
 ## Test Coverage
 
-You can generate a report on your test coverage via the following command
+Generate a coverage report:
 
 ```bash
-$ coverage report
+coverage report
 ```
 
-You can also generate a detailed html report in a directory named htmlcov with the following comand
+Generate an HTML coverage report in htmlcov/:
 
 ```bash
-$ coverage html
+coverage html
 ```
 
 # Troubleshooting
 
 ## Views 404ing
 
-If your newly created views are returning 404 ensure that they are added to the list in main.py.
+If newly created views return 404 ensure they are imported and added in App/main.py:
 
 ```python
 from App.views import (
@@ -177,7 +294,6 @@ from App.views import (
     index_views
 )
 
-# New views must be imported and added to this list
 views = [
     user_views,
     index_views
@@ -186,8 +302,8 @@ views = [
 
 ## Cannot Update Workflow file
 
-If you are running into errors in gitpod when updateding your github actions file, ensure your [github permissions](https://gitpod.io/integrations) in gitpod has workflow enabled ![perms](./images/gitperms.png)
+If you encounter errors when updating GitHub Actions in Gitpod, ensure Gitpod has workflow permissions enabled.
 
 ## Database Issues
 
-If you are adding models you may need to migrate the database with the commands given in the previous database migration section. Alternateively you can delete you database file.
+If you are adding models you may need to migrate the database with the commands shown above. Alternatively you can delete the sqlite database file during development.

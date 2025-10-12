@@ -1,0 +1,196 @@
+{% extends "layout.html" %}
+{% block title %}Transport Manager{% endblock %}
+{% block page %}Transport Manager{% endblock %}
+
+{{ super() }}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='dark-mode.css') }}">
+<div id="dark-toggle-container" style="text-align:right; margin-bottom:10px;">
+  <button id="dark-toggle-btn" class="btn grey darken-3 white-text">Toggle Dark Mode</button>
+</div>
+<div class="row">
+  <div class="col s12 m10 offset-m1">
+    <h5>Quick Transport GUI</h5>
+    <p>Use the controls below to create residents, drivers, drives and stop requests. Select items from dropdowns to inspect schedules and inboxes.</p>
+
+    <!-- Driver creation (left) and Resident creation (right) separated visually -->
+    <div class="row">
+      <div class="col s12 m6">
+        <div class="card">
+          <div class="card-content">
+            <span class="card-title">Driver Management</span>
+            <div class="input-field">
+              <input id="new-driver-status" type="text" placeholder="active">
+              <label for="new-driver-status">Driver status</label>
+            </div>
+            <button id="btn-create-driver" class="btn purple">Create Driver</button>
+
+            <div style="margin-top:18px">
+              <label for="select-driver">Existing Drivers</label>
+              <select id="select-driver" class="browser-default">
+                <option value="" disabled selected>Choose driver</option>
+              </select>
+              <button id="btn-show-schedule" class="btn purple" style="margin-top:8px;">Show Schedule</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col s12 m6">
+        <div class="card">
+          <div class="card-content">
+            <span class="card-title">Resident Management</span>
+            <div class="input-field">
+              <input id="new-resident-name" type="text">
+              <label for="new-resident-name">Resident name</label>
+            </div>
+
+            <div class="input-field">
+              <label for="select-street">Pick an existing street</label>
+              <select id="select-street" class="browser-default">
+                <option value="" disabled selected></option>
+              </select>
+            </div>
+
+            <div class="input-field">
+              <input id="new-resident-street" type="text" placeholder="Or type a new street">
+              <label for="new-resident-street">New street (optional)</label>
+            </div>
+
+            <button id="btn-create-resident" class="btn purple">Create Resident</button>
+
+            <div style="margin-top:18px">
+              <label for="select-resident">Existing Residents</label>
+              <select id="select-resident" class="browser-default">
+                <option value="" disabled selected>Choose resident</option>
+              </select>
+              <button id="btn-show-inbox" class="btn purple" style="margin-top:8px;">Show Inbox</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Drive creation / Drives view separated -->
+    <div class="row">
+      <div class="col s12 m6">
+        <div class="card">
+          <div class="card-content">
+            <span class="card-title">Drive Management</span>
+            <div class="input-field">Pick an existing drive (for stops)
+              <label for="select-drive"></label>
+              <select id="select-drive" class="browser-default">
+                <option value="" disabled selected>Choose drive</option>
+              </select>
+            </div>
+
+            <div class="input-field">
+              <input id="new-drive-location" type="text" placeholder="Depot">
+              <label for="new-drive-location">Drive location</label>
+            </div>
+            <button id="btn-create-drive" class="btn purple">Create Drive</button>
+            <button id="btn-create-stop" class="btn purple" style="margin-left:8px;">Create Stop</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="col s12 m6">
+        <div class="card">
+          <div class="card-content">
+            <span class="card-title">Drives</span>
+            <table class="striped">
+              <thead><tr><th>Drive ID</th><th>Datetime</th><th>Driver ID</th><th>Location</th></tr></thead>
+              <tbody id="table-drives"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Driver schedule and resident inbox separated into their own cards -->
+    <div class="row" style="margin-top:16px;">
+      <div class="col s12 m6">
+        <div class="card">
+          <div class="card-content">
+            <h6>Driver Schedule</h6>
+            <table class="striped">
+              <thead><tr><th>Drive ID</th><th>Datetime</th><th>Stops</th><th>Location</th><th>Actions</th></tr></thead>
+              <tbody id="table-schedule"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="col s12 m6">
+        <div class="card">
+          <div class="card-content">
+            <h6>Resident Inbox</h6>
+            <table class="striped">
+              <thead><tr><th>Stop ID</th><th>Street</th><th>Drive ID</th><th>Created At</th></tr></thead>
+              <tbody id="table-inbox"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Technical output area moved just above All Data section -->
+    <div class="card" style="margin-top:24px;">
+      <div class="card-content">
+        <h6>Technical Output</h6>
+        <div id="output" style="white-space:pre-wrap; font-family:monospace; max-height:240px; overflow:auto;"></div>
+      </div>
+    </div>
+
+    <!-- Clear visual separator before All Data snapshot -->
+    <div style="margin-top:24px; border-top:2px solid #ddd; padding-top:16px;">
+      <h6>All Data Snapshot</h6>
+      <table class="striped">
+        <thead><tr><th>Type</th><th>Data</th></tr></thead>
+        <tbody id="table-all"></tbody>
+      </table>
+    </div>
+
+    <!-- Modal for editing drive -->
+    <div id="edit-drive-modal" class="modal">
+      <div class="modal-content">
+        <h5>Edit Drive</h5>
+        <form id="edit-drive-form">
+          <input type="hidden" id="edit-drive-id">
+          <div class="input-field">
+            <input id="edit-drive-datetime" type="datetime-local">
+            <label for="edit-drive-datetime" class="active">Datetime</label>
+          </div>
+          <div class="input-field">
+            <input id="edit-drive-location" type="text" placeholder="e.g. Depot, North Route">
+            <label for="edit-drive-location" class="active">Location</label>
+          </div>
+          <button type="submit" class="btn purple">Update Drive</button>
+          <button type="button" class="btn grey modal-close" style="margin-left:8px;">Cancel</button>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='transport.js') }}"></script>
+{% endblock %}
+<script>
+// Dark mode toggle logic
+const darkToggleBtn = document.getElementById('dark-toggle-btn');
+darkToggleBtn.addEventListener('click', function() {
+  document.body.classList.toggle('dark-mode');
+  // Optionally persist mode in localStorage
+  if (document.body.classList.contains('dark-mode')) {
+    localStorage.setItem('darkMode', 'enabled');
+  } else {
+    localStorage.setItem('darkMode', 'disabled');
+  }
+});
+
+// On page load, restore dark mode if enabled
+if (localStorage.getItem('darkMode') === 'enabled') {
+  document.body.classList.add('dark-mode');
+}
+</script>
