@@ -1,6 +1,15 @@
 from App.database import db
 from App.models import User, Driver, Drive, Resident, StopRequest
 
+# Optional pretty printing with rich if available
+try:
+    from rich.console import Console
+    from rich.table import Table
+    _RICH_AVAILABLE = True
+    _CONSOLE = Console()
+except Exception:
+    _RICH_AVAILABLE = False
+
 
 def list_all_data():
     """Return a dict containing all rows for each model in JSON-serializable form."""
@@ -40,20 +49,49 @@ def list_all_data():
 def print_all_data():
     """Pretty-print all data to stdout for CLI usage."""
     data = list_all_data()
-    print('\n=== USERS ===')
-    for u in data['users']:
-        print(u)
-    print('\n=== DRIVERS ===')
-    for d in data['drivers']:
-        print(d)
-    print('\n=== DRIVES ===')
-    for dr in data['drives']:
-        print(dr)
-    print('\n=== RESIDENTS ===')
-    for r in data['residents']:
-        print(r)
-    print('\n=== STOP REQUESTS ===')
-    for s in data['stop_requests']:
-        print(s)
+    # If rich is available, render nice tables. Otherwise fall back to simple prints.
+    def _render_table(title, rows):
+        if not rows:
+            if _RICH_AVAILABLE:
+                _CONSOLE.print(f"\n[bold]{title}[/bold] (empty)")
+            else:
+                print(f"\n=== {title} === (empty)")
+            return
+
+        # If rows are dict-like, take keys as columns. For simple lists, show single column.
+        if _RICH_AVAILABLE:
+            # normalize rows to list of dicts
+            if isinstance(rows, (list, tuple)) and rows and isinstance(rows[0], dict):
+                columns = []
+                for r in rows:
+                    for k in r.keys():
+                        if k not in columns:
+                            columns.append(k)
+            else:
+                # fallback single column
+                columns = ["value"]
+
+            table = Table(title=title)
+            for col in columns:
+                table.add_column(col, overflow="fold")
+
+            for r in rows:
+                if isinstance(r, dict):
+                    row = [str(r.get(c, "")) for c in columns]
+                else:
+                    row = [str(r)]
+                table.add_row(*row)
+
+            _CONSOLE.print(table)
+        else:
+            print(f"\n=== {title} ===")
+            for r in rows:
+                print(r)
+
+    _render_table('USERS', data.get('users', []))
+    _render_table('DRIVERS', data.get('drivers', []))
+    _render_table('DRIVES', data.get('drives', []))
+    _render_table('RESIDENTS', data.get('residents', []))
+    _render_table('STOP REQUESTS', data.get('stop_requests', []))
 
     return data
