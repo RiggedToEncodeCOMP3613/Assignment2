@@ -46,52 +46,80 @@ def list_all_data():
     return data
 
 
-def print_all_data():
-    """Pretty-print all data to stdout for CLI usage."""
-    data = list_all_data()
-    # If rich is available, render nice tables. Otherwise fall back to simple prints.
-    def _render_table(title, rows):
-        if not rows:
-            if _RICH_AVAILABLE:
-                _CONSOLE.print(f"\n[bold]{title}[/bold] (empty)")
-            else:
-                print(f"\n=== {title} === (empty)")
-            return
-
-        # If rows are dict-like, take keys as columns. For simple lists, show single column.
+def _render_table(title, rows):
+    if not rows:
         if _RICH_AVAILABLE:
-            # normalize rows to list of dicts
-            if isinstance(rows, (list, tuple)) and rows and isinstance(rows[0], dict):
-                columns = []
-                for r in rows:
-                    for k in r.keys():
-                        if k not in columns:
-                            columns.append(k)
-            else:
-                # fallback single column
-                columns = ["value"]
-
-            table = Table(title=title)
-            for col in columns:
-                table.add_column(col, overflow="fold")
-
-            for r in rows:
-                if isinstance(r, dict):
-                    row = [str(r.get(c, "")) for c in columns]
-                else:
-                    row = [str(r)]
-                table.add_row(*row)
-
-            _CONSOLE.print(table)
+            _CONSOLE.print(f"\n[bold]{title}[/bold] (empty)")
         else:
-            print(f"\n=== {title} ===")
+            print(f"\n=== {title} === (empty)")
+        return
+
+    # If rows are dict-like, take keys as columns. For simple lists, show single column.
+    if _RICH_AVAILABLE:
+        # normalize rows to list of dicts
+        if isinstance(rows, (list, tuple)) and rows and isinstance(rows[0], dict):
+            columns = []
             for r in rows:
-                print(r)
+                for k in r.keys():
+                    if k not in columns:
+                        columns.append(k)
+        else:
+            # fallback single column
+            columns = ["value"]
 
+        table = Table(title=title)
+        for col in columns:
+            table.add_column(col, overflow="fold")
+
+        for r in rows:
+            if isinstance(r, dict):
+                row = [str(r.get(c, "")) for c in columns]
+            else:
+                row = [str(r)]
+            table.add_row(*row)
+
+        _CONSOLE.print(table)
+    else:
+        print(f"\n=== {title} ===")
+        for r in rows:
+            print(r)
+
+def print_users():
+    """Pretty-print only the users table."""
+    data = list_all_data()
     _render_table('USERS', data.get('users', []))
-    _render_table('DRIVERS', data.get('drivers', []))
-    _render_table('DRIVES', data.get('drives', []))
-    _render_table('RESIDENTS', data.get('residents', []))
-    _render_table('STOP REQUESTS', data.get('stop_requests', []))
+    return data['users']
 
+def print_drivers():
+    """Pretty-print only the drivers table."""
+    data = list_all_data()
+    _render_table('DRIVERS', data.get('drivers', []))
+    return data['drivers']
+
+def print_drives():
+    """Pretty-print only the drives table."""
+    data = list_all_data()
+    _render_table('DRIVES', data.get('drives', []))
+    return data['drives']
+
+def print_residents():
+    """Pretty-print only the residents table."""
+    data = list_all_data()
+    _render_table('RESIDENTS', data.get('residents', []))
+    return data['residents']
+
+def print_stop_requests():
+    """Pretty-print only the stop requests table."""
+    data = list_all_data()
+    _render_table('STOP REQUESTS', data.get('stop_requests', []))
+    return data['stop_requests']
+
+def print_all_data():
+    """Pretty-print all tables to stdout for CLI usage."""
+    data = list_all_data()
+    print_users()
+    print_drivers()
+    print_drives()
+    print_residents()
+    print_stop_requests()
     return data

@@ -8,6 +8,7 @@ from App.main import create_app
 from App.controllers import ( create_user, get_all_users_json, get_all_users, initialize,
                               create_resident, create_driver, create_stop_request,
                               create_drive, get_driver_schedule, get_resident_inbox, print_all_data )
+from App.controllers.admin import print_users, print_drivers, print_drives, print_residents, print_stop_requests
 
 
 # This commands file allow you to create convenient CLI commands for testing controllers
@@ -114,6 +115,27 @@ def resident_inbox_command(resident_id, street):
 @transport_cli.command('list-all-data', help='Pretty-print all data (users, drivers, drives, residents, stop requests)')
 def list_all_data_command():
     print_all_data()
+
+# New CLI commands for printing individual tables
+@transport_cli.command('print-users', help='Pretty-print only the users table')
+def print_users_command():
+    print_users()
+
+@transport_cli.command('print-drivers', help='Pretty-print only the drivers table')
+def print_drivers_command():
+    print_drivers()
+
+@transport_cli.command('print-drives', help='Pretty-print only the drives table')
+def print_drives_command():
+    print_drives()
+
+@transport_cli.command('print-residents', help='Pretty-print only the residents table')
+def print_residents_command():
+    print_residents()
+
+@transport_cli.command('print-stop-requests', help='Pretty-print only the stop requests table')
+def print_stop_requests_command():
+    print_stop_requests()
 
 app.cli.add_command(transport_cli)
 
