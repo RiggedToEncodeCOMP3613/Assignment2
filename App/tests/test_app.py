@@ -301,11 +301,4 @@ class UsersIntegrationTests(unittest.TestCase):
     # create_user(), create_resident(), link_user_resident()
     # def test_user_resident_association(self):
         # where is link method
-
-
-
-'''
-1. Resident want bread, he make a stop request.
-2. A driver sees the stop request, and creates modifies his drive to fulfill said stop request
-3. Resident should see in their inbox it is satisfy
-'''        
+     
