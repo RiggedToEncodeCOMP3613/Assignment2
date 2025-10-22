@@ -1,32 +1,33 @@
+
 from App.database import db
+from App.models.user import User
 from App.models.stoprequest import StopRequest
 
-class Resident(db.Model):
+class Resident(User):
     __tablename__ = 'resident'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, db.ForeignKey('user.id'), primary_key=True)
     name = db.Column(db.String(80), nullable=True)
-    # resident has a fixed street/address (string)
     street = db.Column(db.String(120), nullable=True)
     stop_requests = db.relationship('StopRequest', back_populates='requestee', cascade='all, delete-orphan')
 
+    __mapper_args__ = {
+        'polymorphic_identity': 'resident',
+    }
+
+    def __init__(self, username, password, name=None, street=None):
+        super().__init__(username, password)
+        self.name = name
+        self.street = street
+
     def view_inbox(self, street=None):
-        # If no filter provided, return all stop requests for this resident
         if street is None:
             return list(self.stop_requests)
-        # Compare by street name string
         return [sr for sr in self.stop_requests if sr.street_name == str(street)]
 
     def create_stop_request(self, drive, street=None):
-        """Create a StopRequest for this resident for the given drive.
-        If street is provided it is used, otherwise resident.street is used.
-        drive may be a Drive instance or an integer id."""
         from App.database import db as _db
         from App.models.driver import Drive as DriveModel
-
-        # resolve street_name from parameter or resident attribute
         street_name = str(street) if street is not None else self.street
-
-        # resolve drive
         if isinstance(drive, DriveModel):
             drive_obj = drive
         else:
@@ -34,10 +35,8 @@ class Resident(db.Model):
                 drive_obj = _db.session.get(DriveModel, int(drive))
             except Exception:
                 drive_obj = None
-
         if not drive_obj:
             raise ValueError('Drive not found')
-
         sr = StopRequest(drive=drive_obj, street_name=street_name, requestee=self)
         _db.session.add(sr)
         _db.session.commit()
@@ -52,4 +51,4 @@ class Resident(db.Model):
         return d.status if d else None
 
     def __repr__(self):
-        return f"<Resident id={self.id} name={self.name}>"
+        return f"<Resident id={self.id} username={self.username} name={self.name}>"

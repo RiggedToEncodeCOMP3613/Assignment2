@@ -1,13 +1,23 @@
+
 from App.database import db
+from App.models.user import User
 from datetime import datetime
 
-class Driver(db.Model):
+class Driver(User):
     __tablename__ = 'driver'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, db.ForeignKey('user.id'), primary_key=True)
     status = db.Column(db.String(50), nullable=True)
 
     # one-to-many: Driver -> Drive
     schedule = db.relationship('Drive', back_populates='driver', cascade='all, delete-orphan')
+
+    __mapper_args__ = {
+        'polymorphic_identity': 'driver',
+    }
+
+    def __init__(self, username, password, status=None):
+        super().__init__(username, password)
+        self.status = status
 
     def add_drive(self, when=None, current_location=None):
         """Create a Drive for this driver and persist it."""
@@ -18,7 +28,7 @@ class Driver(db.Model):
         return drive
 
     def __repr__(self):
-        return f"<Driver id={self.id} status={self.status}>"
+        return f"<Driver id={self.id} username={self.username} status={self.status}>"
 
 class Drive(db.Model):
     __tablename__ = 'drive'
