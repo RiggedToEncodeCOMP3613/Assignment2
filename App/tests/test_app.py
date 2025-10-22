@@ -56,7 +56,7 @@ class UserUnitTests(unittest.TestCase):
         self.assertGreater(len(users), 0)
     
     def test_create_driver(self):
-        driver = Driver(status="Available") # mock data for unit test
+        driver = Driver(username="driver1", password="pass", status="Available") # mock data for unit test
         self.assertIsNotNone(driver.id)
         self.assertEqual(driver.status, "Available")
 
@@ -77,7 +77,7 @@ class UserUnitTests(unittest.TestCase):
         self.assertIsNotNone(schedule)
     
     def test_create_resident(self):
-        resident = Resident(name="Alice", street="Main St") # mock data for unit test
+        resident = Resident(username="alice", password="pass", name="Alice", street="Main St") # mock data for unit test
         self.assertEqual(resident.name, "Alice")
         self.assertEqual(resident.street, "Main St")
     
@@ -88,7 +88,7 @@ class UserUnitTests(unittest.TestCase):
 
     
     def test_create_stop_request(self):
-        resident = Resident(name="Alice", street="Main St") # mock data for unit test
+        resident = Resident(username="alice", password="pass", name="Alice", street="Main St") # mock data for unit test
         drive = Drive(1, when="2026-01-10 18:00", current_location="Main St") # mock data for unit test
         stop_request = create_stop_request(resident.id, drive.id, "Main St") # mock data for unit test
         self.assertIsNotNone(stop_request)
@@ -189,7 +189,9 @@ class UsersIntegrationTests(unittest.TestCase):
         self.assertIn("john_doe", usernames)
 
     def test_create_driver_with_schedule(self):
-        driver = create_driver(status="Available")
+        driver = Driver(username="driver2", password="pass", status="Available")
+        db.session.add(driver)
+        db.session.commit()
         self.assertIsNotNone(driver)
         self.assertEqual(driver.status, "Available")
 
@@ -206,7 +208,9 @@ class UsersIntegrationTests(unittest.TestCase):
         self.assertGreater(len(schedule), 1)
         
     def test_create_resident_with_street(self):
-        alice = create_resident(name="Alice", street="Main St")
+        alice = Resident(username="alice2", password="pass", name="Alice", street="Main St")
+        db.session.add(alice)
+        db.session.commit()
         self.assertIsNotNone(alice)
         self.assertEqual(alice.name, "Alice")
         self.assertEqual(alice.street, "Main St")
@@ -217,50 +221,57 @@ class UsersIntegrationTests(unittest.TestCase):
     
     #Resident views scheduled drive and creates stop request. Verify stop request is linked to correct drive and resident
     def test_stop_request_workflow(self):
-        schedules = get_driver_schedule(1) # get the schedule of driver (list of existing Drives)
+        # Setup driver and resident
+        driver = Driver(username="driver3", password="pass", status="Available")
+        db.session.add(driver)
+        db.session.commit()
+        drive = create_drive(driver.id, when="2026-01-10 18:00", current_location="Main St")
+        resident = Resident(username="resident3", password="pass", name="Alice", street="Main St")
+        db.session.add(resident)
+        db.session.commit()
+        schedules = get_driver_schedule(driver.id)
         self.assertIsNotNone(schedules)
-        
-        resident = get_resident(1) # get resident
-        self.assertIsNotNone(resident)
-        
-        for schedule in schedules: # resident can see the streets and chooses the drive with their street to make a stop request
+        for schedule in schedules:
             if resident.street == schedule.current_location:
                 drive = schedule
-        
-        stop_request = resident.create_stop_request(resident.id, drive.id, resident.street) #resident creates stop_request with their street
+        stop_request = resident.create_stop_request(drive, resident.street)
         self.assertIsNotNone(stop_request)
         self.assertEqual(stop_request.drive_id, drive.id)
         self.assertEqual(stop_request.requestee_id, resident.id)
     
     # When driver schedules a drive to a street, verify resident on that street sees drive in inbox (???)
     def test_resident_inbox_notification(self):
-        resident = get_resident(1)
-        self.assertIsNotNone(resident)
-        inbox = get_resident_inbox(resident.id, resident.street) # check if inbox populated witt the stop_request resident created
-        
-        self.assertIsNotNone(inbox) # ensure inbox is not empty
-        self.assertGreater(len(inbox), 0) # check if inbox has at least 1 stop_request
+        resident = Resident(username="resident4", password="pass", name="Bob", street="Main St")
+        db.session.add(resident)
+        db.session.commit()
+        driver = Driver(username="driver4", password="pass", status="Available")
+        db.session.add(driver)
+        db.session.commit()
+        drive = create_drive(driver.id, when="2026-01-10 18:00", current_location="Main St")
+        stop_request = resident.create_stop_request(drive, resident.street)
+        inbox = get_resident_inbox(resident.id, resident.street)
+        self.assertIsNotNone(inbox)
+        self.assertGreater(len(inbox), 0)
 
     # Driver updates status during active drive. Verify status change persists and is visible to residents viewing the drive
     def test_driver_status_update_visibility(self):
-        resident = get_resident(1)
-        self.assertIsNotNone(resident)
-
-        driver = get_driver(1)
-        self.assertIsNotNone(driver)
-        driver.update_driver_status(status="On the way")
-        # where is update_driver_status()
-
+        resident = Resident(username="resident5", password="pass", name="Eve", street="Main St")
+        db.session.add(resident)
+        db.session.commit()
+        driver = Driver(username="driver5", password="pass", status="Available")
+        db.session.add(driver)
+        db.session.commit()
+        drive = create_drive(driver.id, when="2026-01-10 18:00", current_location="Main St")
+        stop_request = resident.create_stop_request(drive, resident.street)
+        driver.status = "On the way"
+        db.session.commit()
         inbox = get_resident_inbox(resident.id, resident.street)
         self.assertIsNotNone(inbox)
-
-        d = inbox[0] # get a drive from the inbox
-
-        for request in inbox: # get a drive from the inbox
-            if request.drive.driver_id == driver.id: # if driver accepted request
-                status = view_driver_status(driver) # check the driver's status
+        for request in inbox:
+            if request.drive.driver_id == driver.id:
+                status = view_driver_status(driver)
                 self.assertIsNotNone(status)
-                self.assertEqual(status, "On the way") # check if resident can see if the status updated
+                self.assertEqual(status, "On the way")
 
     # Driver updates location multiple times during drive. Verify all location updates persist with timestamps
     # create_driver(), create_drive(), update_current_location(), get_driver()

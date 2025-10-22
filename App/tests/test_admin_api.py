@@ -24,13 +24,13 @@ class AdminAPITests(unittest.TestCase):
         db.session.add(user)
         
         # Create driver and drive
-        driver = Driver(status="active")
+        driver = Driver(username="driver_api", password="pass", status="active")
         db.session.add(driver)
         db.session.commit()
         drive = driver.add_drive(current_location="Test Route")
         
         # Create resident
-        resident = Resident(name="TestResident", street="Test St")
+        resident = Resident(username="resident_api", password="pass", name="TestResident", street="Test St")
         db.session.add(resident)
         db.session.commit()
         
@@ -87,7 +87,7 @@ class AdminAPITests(unittest.TestCase):
     def test_create_driver(self):
         """Test POST /api/admin/drivers endpoint"""
         response = self.client.post('/api/admin/drivers',
-            json={'status': 'active'})
+            json={'username': 'driver_api2', 'password': 'pass', 'status': 'active'})
         self.assertEqual(response.status_code, 201)
         data = json.loads(response.data)
         self.assertEqual(data['status'], 'active')
@@ -111,7 +111,7 @@ class AdminAPITests(unittest.TestCase):
 
     def test_create_drive(self):
         """Test POST /api/admin/drives endpoint"""
-        driver = Driver(status="active")
+        driver = Driver(username="driver_api3", password="pass", status="active")
         db.session.add(driver)
         db.session.commit()
 
@@ -134,7 +134,7 @@ class AdminAPITests(unittest.TestCase):
     def test_create_resident(self):
         """Test POST /api/admin/residents endpoint"""
         response = self.client.post('/api/admin/residents',
-            json={'name': 'NewResident', 'street': 'New St'})
+            json={'username': 'resident_api2', 'password': 'pass', 'name': 'NewResident', 'street': 'New St'})
         self.assertEqual(response.status_code, 201)
         data = json.loads(response.data)
         self.assertEqual(data['name'], 'NewResident')
@@ -161,12 +161,12 @@ class AdminAPITests(unittest.TestCase):
     def test_create_stop_request(self):
         """Test POST /api/admin/stop-requests endpoint"""
         # Create required related objects first
-        driver = Driver(status="active")
+        driver = Driver(username="driver_api4", password="pass", status="active")
         db.session.add(driver)
         db.session.commit()
         drive = driver.add_drive(current_location="Test Route")
         
-        resident = Resident(name="TestResident", street="Test St")
+        resident = Resident(username="resident_api3", password="pass", name="TestResident", street="Test St")
         db.session.add(resident)
         db.session.commit()
 
