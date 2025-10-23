@@ -1,7 +1,7 @@
 
 from App.database import db
 from App.models.user import User
-from datetime import datetime
+from datetime import datetime, timezone
 
 class Driver(User):
     __tablename__ = 'driver'
@@ -21,7 +21,16 @@ class Driver(User):
 
     def add_drive(self, when=None, current_location=None):
         """Create a Drive for this driver and persist it."""
-        when = when or datetime.utcnow()
+        #when = when or datetime.utcnow()
+        
+        #adding as test:######################
+        if when is None:
+            when = datetime.now(timezone.utc)
+        elif isinstance(when, str):
+        # parse string to datetime object
+            when = datetime.strptime(when, "%Y-%m-%d %H:%M")
+        #####################
+        
         drive = Drive(datetime=when, current_location=current_location, driver=self)
         db.session.add(drive)
         db.session.commit()
@@ -41,6 +50,11 @@ class Drive(db.Model):
 
     # one-to-many: Drive -> StopRequest
     stops = db.relationship('StopRequest', back_populates='drive', cascade='all, delete-orphan')
+
+    def __init__(self, datetime, current_location, driver):
+        self.driver = driver
+        self.datetime = datetime
+        self.current_location= current_location
 
     def __repr__(self):
         return f"<Drive id={self.id} datetime={self.datetime} driver_id={self.driver_id} current_location={self.current_location}>"

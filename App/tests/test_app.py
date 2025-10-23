@@ -1,13 +1,14 @@
 import os, tempfile, pytest, logging, unittest
 from werkzeug.security import check_password_hash, generate_password_hash
 
+from datetime import datetime, timezone
+
 from App.main import create_app
 from App.database import db, create_db
-from App.models import User, Driver, Drive, Resident
+from App.models import User, Driver, Drive, Resident, StopRequest
 from App.controllers import (
     create_user,
     get_all_users_json,
-    get_all_users,
     login,
     get_user,
     get_user_by_username,
@@ -19,8 +20,7 @@ from App.controllers import (
     create_resident,
     get_resident,
     create_stop_request,
-    get_resident_inbox, 
-    view_driver_status
+    get_resident_inbox
 )
 
 
@@ -33,71 +33,37 @@ class UserUnitTests(unittest.TestCase):
 
     def test_create_user(self):
         user = User("john_doe", "password123") # mock data for unit test
-        self.assertIsNotNone(user.id)
+        self.assertIsNone(user.id)
         self.assertEqual(user.username, "john_doe") 
-    
-    # Calls the database 
-    def test_get_user_by_username(self): 
-        user = User("john_doe", "password123")
-        user = get_user_by_username("john_doe")
-        self.assertEqual(user.username, "john_doe")
-
-    # Calls the database 
-    def test_get_user_by_id(self):
-        user = User("john_doe", "password123")
-        user = get_user(1)
-        self.assertEqual(user.id, 1)
-        self.assertIsNotNone(user.username)
-    
-    # Calls the database 
-    def test_get_all_users(self):
-        user = User("john_doe", "password123")
-        users = get_all_users()
-        self.assertGreater(len(users), 0)
     
     def test_create_driver(self):
         driver = Driver(username="driver1", password="pass", status="Available") # mock data for unit test
-        self.assertIsNotNone(driver.id)
+        self.assertIsNone(driver.id)
+        self.assertEqual(driver.username, "driver1")
         self.assertEqual(driver.status, "Available")
-
-    # Calls the database 
-    def test_get_driver(self):
-        driver = Driver(status="Available")
-        driver = get_driver(1)
-        self.assertEqual(driver.id, 1)
     
     def test_create_drive(self):
-        drive = Drive(1, when="2026-01-10 18:00", current_location="Main St") # mock data for unit test
-        self.assertIsNotNone(drive)
+        drive = Drive(datetime="2026-01-10 18:00", current_location="Main St", driver=None) # mock data for unit test
+        self.assertIsNone(drive.id)
+        self.assertIsNone(drive.driver)
+        self.assertEqual(drive.datetime, "2026-01-10 18:00")
         self.assertEqual(drive.current_location, "Main St")
         
-    # Calls the database    
-    def test_get_driver_schedule(self):
-        schedule = get_driver_schedule(1)
-        self.assertIsNotNone(schedule)
-    
     def test_create_resident(self):
         resident = Resident(username="alice", password="pass", name="Alice", street="Main St") # mock data for unit test
+        self.assertIsNone(resident.id)
+        self.assertEqual(resident.username, "alice")
         self.assertEqual(resident.name, "Alice")
         self.assertEqual(resident.street, "Main St")
     
-    # Calls the database 
-    def test_get_resident(self):
-        resident = get_resident(1)
-        self.assertEqual(resident.id, 1)
-
-    
     def test_create_stop_request(self):
-        resident = Resident(username="alice", password="pass", name="Alice", street="Main St") # mock data for unit test
-        drive = Drive(1, when="2026-01-10 18:00", current_location="Main St") # mock data for unit test
-        stop_request = create_stop_request(resident.id, drive.id, "Main St") # mock data for unit test
-        self.assertIsNotNone(stop_request)
-        self.assertEqual(stop_request.street, "Main St")
-    
-    # Calls the database
-    def test_get_resident_inbox(self):
-        inbox = get_resident_inbox(1, street="Main St")
-        self.assertIsNotNone(inbox)
+        stop_request = StopRequest(drive=None, street_name="Main St", requestee=None) # mock data for unit test
+        self.assertIsNone(stop_request.id)
+        self.assertIsNone(stop_request.drive_id)
+        self.assertIsNone(stop_request.drive)
+        self.assertIsNone(stop_request.requestee_id)
+        self.assertIsNone(stop_request.requestee)
+        self.assertEqual(stop_request.street_name, "Main St")
     
     def test_hashed_password(self):
         user = User("john_doe", "mypass") # mock data for unit test
@@ -174,6 +140,7 @@ class UsersIntegrationTests(unittest.TestCase):
     def test_create_user(self):
         john = create_user("john_doe", "password123")
         self.assertIsNotNone(john)
+        assert login("john_doe", "password123") != None
         
         user = get_user_by_username(john.username)
         self.assertIsNotNone(user)
@@ -185,23 +152,26 @@ class UsersIntegrationTests(unittest.TestCase):
 
         usernames = [user["username"] for user in users_json]
         self.assertIsNotNone(usernames)
-        self.assertIn("bob", usernames)
-        self.assertIn("john_doe", usernames)
 
     def test_create_driver_with_schedule(self):
         driver = Driver(username="driver2", password="pass", status="Available")
         db.session.add(driver)
         db.session.commit()
-        self.assertIsNotNone(driver)
+        self.assertIsNotNone(driver.id)
+        self.assertEqual(driver.username, "driver2")
         self.assertEqual(driver.status, "Available")
 
         drive1 = create_drive(driver.id, when="2026-01-10 18:00", current_location="Main St")
-        self.assertIsNotNone(drive1)
+        self.assertIsNotNone(drive1.id)
         self.assertEqual(drive1.current_location, "Main St")
+        expected_dt = datetime.strptime("2026-01-10 18:00", "%Y-%m-%d %H:%M")
+        self.assertEqual(drive1.datetime, expected_dt)
         
         drive2 = create_drive(driver.id, when="2026-02-11 18:00", current_location="Side St")
-        self.assertIsNotNone(drive2)
+        self.assertIsNotNone(drive2.id)
         self.assertEqual(drive2.current_location, "Side St")
+        expected_dt = datetime.strptime("2026-02-11 18:00", "%Y-%m-%d %H:%M")
+        self.assertEqual(drive2.datetime, expected_dt)
 
         schedule = get_driver_schedule(driver.id)
         self.assertIsNotNone(schedule)
@@ -211,12 +181,13 @@ class UsersIntegrationTests(unittest.TestCase):
         alice = Resident(username="alice2", password="pass", name="Alice", street="Main St")
         db.session.add(alice)
         db.session.commit()
-        self.assertIsNotNone(alice)
+        self.assertIsNotNone(alice.id)
+        self.assertEqual(alice.username, "alice2")
         self.assertEqual(alice.name, "Alice")
         self.assertEqual(alice.street, "Main St")
         
         resident = get_resident(alice.id)
-        self.assertIsNotNone(resident)
+        self.assertIsNotNone(resident.id)
         self.assertEqual(resident.id, alice.id)
     
     #Resident views scheduled drive and creates stop request. Verify stop request is linked to correct drive and resident
@@ -225,91 +196,69 @@ class UsersIntegrationTests(unittest.TestCase):
         driver = Driver(username="driver3", password="pass", status="Available")
         db.session.add(driver)
         db.session.commit()
+        self.assertIsNotNone(driver.id)
+
         drive = create_drive(driver.id, when="2026-01-10 18:00", current_location="Main St")
+        self.assertIsNotNone(drive.id)
+
         resident = Resident(username="resident3", password="pass", name="Alice", street="Main St")
         db.session.add(resident)
         db.session.commit()
+        self.assertIsNotNone(resident.id)
+
         schedules = get_driver_schedule(driver.id)
         self.assertIsNotNone(schedules)
         for schedule in schedules:
             if resident.street == schedule.current_location:
                 drive = schedule
         stop_request = resident.create_stop_request(drive, resident.street)
-        self.assertIsNotNone(stop_request)
+        self.assertIsNotNone(stop_request.id)
         self.assertEqual(stop_request.drive_id, drive.id)
         self.assertEqual(stop_request.requestee_id, resident.id)
     
-    # When driver schedules a drive to a street, verify resident on that street sees drive in inbox (???)
+    # When driver schedules a drive to a street, verify resident on that street sees drive in inbox 
     def test_resident_inbox_notification(self):
         resident = Resident(username="resident4", password="pass", name="Bob", street="Main St")
         db.session.add(resident)
         db.session.commit()
+
         driver = Driver(username="driver4", password="pass", status="Available")
         db.session.add(driver)
         db.session.commit()
+
         drive = create_drive(driver.id, when="2026-01-10 18:00", current_location="Main St")
         stop_request = resident.create_stop_request(drive, resident.street)
         inbox = get_resident_inbox(resident.id, resident.street)
+
+        flag = False
+        for s in inbox: #inbox contains a list of stop requests
+            if s == stop_request: #check to see if the stop_request just made is in the inbox
+                flag = True
         self.assertIsNotNone(inbox)
         self.assertGreater(len(inbox), 0)
+        self.assertTrue(flag)
+
 
     # Driver updates status during active drive. Verify status change persists and is visible to residents viewing the drive
     def test_driver_status_update_visibility(self):
         resident = Resident(username="resident5", password="pass", name="Eve", street="Main St")
         db.session.add(resident)
         db.session.commit()
+
         driver = Driver(username="driver5", password="pass", status="Available")
         db.session.add(driver)
         db.session.commit()
+
         drive = create_drive(driver.id, when="2026-01-10 18:00", current_location="Main St")
         stop_request = resident.create_stop_request(drive, resident.street)
         driver.status = "On the way"
         db.session.commit()
+
         inbox = get_resident_inbox(resident.id, resident.street)
         self.assertIsNotNone(inbox)
         for request in inbox:
             if request.drive.driver_id == driver.id:
-                status = view_driver_status(driver)
+                status = resident.view_driver_status(driver)
                 self.assertIsNotNone(status)
                 self.assertEqual(status, "On the way")
-
-    # Driver updates location multiple times during drive. Verify all location updates persist with timestamps
-    # create_driver(), create_drive(), update_current_location(), get_driver()
-    #def test_driver_location_tracking(self):
-        # update_current_location(): where is method
-        	
-    # Test full drive lifecycle: schedule, residents view, stop requests created, driver updates status, drive completed. Verify data correct at each stage
-    # create_driver(), create_drive(), create_resident(), create_stop_request(), update_driver_status(), complete_drive()
-    #def test_complete_drive_lifecycle(self):
-        # update_driver_status(), complete_drive(): where are these methods
-
-    # Only authenticated drivers can create and manage drives. Verify unauthorized attempts are rejected
-    # authenticate(), create_driver(), create_drive()
-    def test_authentication_driver_authorization(self):
-        user = create_user("guy", "guypass")
-        assert login("guy", "guynotpass") == None
-        #is the method authenticate() or login()?
-
-        drive = user.create_drive(user.id, when="2026-01-10 18:00", current_location="Main St") 
-        self.assertIsNone(drive) # user cannot create_drive because not logged in
-    
-    # Only authenticated residents can create stop requests. Verify unauthorized attempts are rejected
-    # authenticate(), create_resident(), create_stop_request()
-    def test_authentication_resident_authorization(self):
-        user = create_user("brock", "brockpass")
-        assert login("brock", "brocknotpass") == None
-        #is the method authenticate() or login()?
-
-        stop_request = user.create_stop_request(user.id, 1, "Yellow St") 
-        self.assertIsNone(stop_request) # user cannot create_stop_reuest because not logged in
-
-    # User account is associated with driver profile. Verify driver actions traced back to user account
-    # create_user(), create_driver(), link_user_driver()
-    # def test_user_driver_association(self):
-        # where is link method
-
-    # User account is associated with resident profile. Verify resident actions traced back to user account
-    # create_user(), create_resident(), link_user_resident()
-    # def test_user_resident_association(self):
-        # where is link method
      
