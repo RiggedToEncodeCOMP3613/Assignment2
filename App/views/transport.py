@@ -133,10 +133,12 @@ def api_create_stop():
 @transport_views.route('/api/transport/driver-schedule', methods=['GET'])
 @jwt_required()
 def api_driver_schedule():
+    print ("Current User Type:", type(current_user))
     if not isinstance(current_user, Driver):
         return jsonify({"error": "Only drivers can view their schedule"}), 403
-   
+    print ("Current User ID:", current_user.id)
     driver_id = request.args.get('driver_id', type=int)
+    print ("Driver ID:", driver_id)
     driver = get_driver(driver_id)
     if not driver:
         return jsonify({"error": "Driver not found"}), 404
@@ -160,9 +162,21 @@ def api_driver_schedule():
 def api_resident_inbox():
     if not isinstance(current_user, Resident):
         return jsonify({"error": "Only residents can view their inbox"}), 403
-   
+
+    # Inline identify resident logic
+    resident = None
     resident_id = request.args.get('resident_id', type=int)
-    resident = get_resident(resident_id)
+    if resident_id:
+        resident = db.session.get(Resident, resident_id)
+    if not resident:
+        # Try by username from current_user
+        if hasattr(current_user, 'username'):
+            resident = db.session.query(Resident).filter_by(username=current_user.username).first()
+    if not resident:
+        # Fallback: if current_user is a Resident, use it
+        if isinstance(current_user, Resident):
+            resident = current_user
+    print("Resident resolved as:", resident)
     if not resident:
         return jsonify({"error": "Resident not found"}), 404
     
