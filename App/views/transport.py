@@ -28,10 +28,27 @@ def transport_page():
 @transport_views.route('/api/transport/options', methods=['GET'])
 def transport_options():
     data = list_all_data()
-    # return drivers, residents and drives to populate dropdowns
+    # return drivers, residents and drives to populate dropdowns with all relevant fields
+    drivers = [
+        {
+            'id': d.get('id'),
+            'username': d.get('username'),
+            'status': d.get('status')
+        }
+        for d in data.get('drivers', [])
+    ]
+    residents = [
+        {
+            'id': r.get('id'),
+            'username': r.get('username'),
+            'name': r.get('name'),
+            'street': r.get('street')
+        }
+        for r in data.get('residents', [])
+    ]
     return jsonify({
-        'drivers': data.get('drivers', []),
-        'residents': data.get('residents', []),
+        'drivers': drivers,
+        'residents': residents,
         'drives': data.get('drives', [])
     })
 
