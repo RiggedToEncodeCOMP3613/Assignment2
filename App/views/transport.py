@@ -138,11 +138,12 @@ def api_driver_schedule():
         return jsonify({"error": "Only drivers can view their schedule"}), 403
     print ("Current User ID:", current_user.id)
     driver_id = request.args.get('driver_id', type=int)
+    if not driver_id:
+        driver_id = current_user.id
     print ("Driver ID:", driver_id)
     driver = get_driver(driver_id)
     if not driver:
         return jsonify({"error": "Driver not found"}), 404
-    
     schedule = get_driver_schedule(driver_id)
     
     result = []
