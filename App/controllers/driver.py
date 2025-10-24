@@ -2,8 +2,8 @@ from datetime import datetime
 from App.models import Driver
 from App.database import db
 
-def create_driver(status=None):
-    d = Driver(status=status)
+def create_driver(username, password, status=None):
+    d = Driver(username=username, password=password, status=status)
     db.session.add(d)
     db.session.commit()
     return d

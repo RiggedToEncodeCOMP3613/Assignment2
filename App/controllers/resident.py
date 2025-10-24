@@ -1,8 +1,8 @@
 from App.models import Resident
 from App.database import db
 
-def create_resident(name=None, street=None):
-    r = Resident(name=name, street=street)
+def create_resident(username, password, name=None, street=None):
+    r = Resident(username=username, password=password, name=name, street=street)
     db.session.add(r)
     db.session.commit()
     return r

@@ -13,8 +13,8 @@ def initialize():
     create_user('bob', 'bobpass')
 
     # Create drivers
-    d1 = Driver(status='active')
-    d2 = Driver(status='active')
+    d1 = Driver(username='luca', password='pass123', status='active')
+    d2 = Driver(username='honey', password='pass123', status='active')
     db.session.add_all([d1, d2])
     db.session.commit()
 
@@ -23,8 +23,8 @@ def initialize():
     drive2 = d2.add_drive(current_location='North Route')
 
     # Create residents with fixed street addresses
-    r1 = Resident(name='Alice', street='Main St')
-    r2 = Resident(name='Charlie', street='Oak Ave')
+    r1 = Resident(username='law', password='pass123', name='Law', street='Main St')
+    r2 = Resident(username='charlie', password='pass123', name='Charlie', street='Oak Ave')
     db.session.add_all([r1, r2])
     db.session.commit()
 

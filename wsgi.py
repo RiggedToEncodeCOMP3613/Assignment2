@@ -1,6 +1,15 @@
 import click, sys
 from flask import Flask
 from flask.cli import with_appcontext, AppGroup
+from flask_jwt_extended import JWTManager
+import json
+
+from App.views import views
+'''from App.views.transport import transport_views
+from App.views.user import user_views
+from App.views.auth import auth_views'''
+
+from App.models import User, Driver, Resident
 
 from App.database import db, get_migrate
 from App.models import User
@@ -15,6 +24,100 @@ from App.controllers.admin import print_users, print_drivers, print_drives, prin
 
 app = create_app()
 migrate = get_migrate(app)
+
+jwt = JWTManager(app)
+@jwt.user_identity_loader
+def user_identity_lookup(user):
+    # Return the user.id as a simple string (JWT "sub" claim)
+    return str(user.id)
+
+
+@jwt.user_lookup_loader
+def user_lookup_callback(_jwt_header, jwt_data):
+    # # The identity (sub) is just the user id
+    # user_id = int(jwt_data["sub"])
+    # # You can look up all types of users, or if you have a single user table:
+    # user = User.query.get(user_id) or Driver.query.get(user_id) or Resident.query.get(user_id)
+    # return user
+    user_id = int(jwt_data["sub"])
+
+    # Try each user type in order
+    user = db.session.get(Driver, user_id)
+    if user:
+        return user
+
+    user = db.session.get(Resident, user_id)
+    if user:
+        return user
+
+    user = db.session.get(User, user_id)
+    if user:
+        return user
+
+    return None  # safety fallback
+
+'''# Make get_jwt_identity() return the dictionary, not the user object
+@jwt.user_identity_loader
+def user_identity_lookup(user):
+    if isinstance(user, dict):
+        return json.dumps(user)
+        #return user
+
+    if isinstance(user, Driver):
+        role = "driver"
+    elif isinstance(user, Resident):
+        role = "resident"
+    else:
+        role = "user"
+    
+    #return json.dumps({"id": user.id, "role": role})
+
+    return {"id": user.id, "role": role}
+    #return {"id": user.id, "role": user.__class__.__name__.lower()}
+
+########### adding in a loader callback
+@jwt.user_lookup_loader
+def user_lookup_callback(_jwt_header, jwt_data):
+    sub = jwt_data["sub"]
+
+    if isinstance(sub, dict):
+        identity = sub
+    else:
+        try:
+            identity = json.loads(sub)
+        except Exception:
+            identity = {"id": sub, "role": "user"}
+
+    user_id = identity.get("id")
+    role = identity.get("role")
+
+    if role == "driver":
+        return db.session.get(Driver, user_id)
+    elif role == "resident":
+        return db.session.get(Resident, user_id)
+    else:
+        return db.session.get(User, user_id)
+'''
+
+'''@jwt.user_lookup_loader
+def user_lookup_callback(_jwt_header, jwt_data):
+    identity_str = jwt_data["sub"]  # "sub" is the identity you put in the token
+    identity = json.loads(identity_str)
+    
+    user_id = identity["id"]
+    role = identity["role"]
+
+    if role == "driver":
+        return db.session.get(Driver, user_id)
+    elif role == "resident":
+        return db.session.get(Resident, user_id)
+    else:
+        return db.session.get(User, user_id)'''
+
+############
+if __name__ == "__main__":
+    app.run(debug=True)
+
 
 # This command creates and initializes the database
 @app.cli.command("init", help="Creates and initializes the database")

@@ -190,7 +190,6 @@ class UsersIntegrationTests(unittest.TestCase):
         self.assertIsNotNone(resident.id)
         self.assertEqual(resident.id, alice.id)
     
-    #Resident views scheduled drive and creates stop request. Verify stop request is linked to correct drive and resident
     def test_stop_request_workflow(self):
         # Setup driver and resident
         driver = Driver(username="driver3", password="pass", status="Available")
@@ -215,8 +214,7 @@ class UsersIntegrationTests(unittest.TestCase):
         self.assertIsNotNone(stop_request.id)
         self.assertEqual(stop_request.drive_id, drive.id)
         self.assertEqual(stop_request.requestee_id, resident.id)
-    
-    # When driver schedules a drive to a street, verify resident on that street sees drive in inbox 
+     
     def test_resident_inbox_notification(self):
         resident = Resident(username="resident4", password="pass", name="Bob", street="Main St")
         db.session.add(resident)
@@ -238,8 +236,6 @@ class UsersIntegrationTests(unittest.TestCase):
         self.assertGreater(len(inbox), 0)
         self.assertTrue(flag)
 
-
-    # Driver updates status during active drive. Verify status change persists and is visible to residents viewing the drive
     def test_driver_status_update_visibility(self):
         resident = Resident(username="resident5", password="pass", name="Eve", street="Main St")
         db.session.add(resident)
