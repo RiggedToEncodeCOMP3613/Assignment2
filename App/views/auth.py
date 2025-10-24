@@ -80,15 +80,14 @@ def user_login_api():
 @auth_views.route('/api/identify', methods=['GET'])
 @jwt_required()
 def identify_user():
-    identity = get_jwt_identity() or {}
+    if not current_user:
+        return jsonify({'error': 'No user found for this token'}), 401
 
-    username = getattr(current_user, 'username', 'unknown')
-    user_id = identity.get('id', 'unknown')
-    role = identity.get('role', current_user.__class__.__name__.lower() if current_user else 'unknown')
-
+    role = current_user.__class__.__name__.lower()
     return jsonify({
-        'message': f"User identified: username={username}, id={user_id}, role={role}"
+        'message': f"User identified: username={current_user.username}, id={current_user.id}, role={role}"
     }), 200
+
 
 
 @auth_views.route('/api/logout', methods=['GET'])

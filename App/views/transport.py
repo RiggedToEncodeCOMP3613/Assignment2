@@ -21,17 +21,6 @@ transport_views = Blueprint('transport_views', __name__, template_folder='../tem
 import json
 from flask_jwt_extended import get_jwt_identity
 
-def get_identity():
-    """Safely get decoded JWT identity (dict instead of string)."""
-    identity_raw = get_jwt_identity()
-    if isinstance(identity_raw, str):
-        try:
-            return json.loads(identity_raw)
-        except json.JSONDecodeError:
-            return {}
-    return identity_raw
-
-
 @transport_views.route('/transport', methods=['GET'])
 def transport_page():
     return render_template('transport.html')
@@ -152,14 +141,13 @@ def api_driver_schedule():
 @transport_views.route('/api/transport/resident-inbox', methods=['GET'])
 @jwt_required()
 def api_resident_inbox():
-    #identity = get_jwt_identity()
-    identity = get_identity()
-    
-    if identity.get("role") != "resident":
+    if not isinstance(current_user, Resident):
         return jsonify({"error": "Only residents can view their inbox"}), 403
-    
-    resident_id = identity.get("id")
-    #resident_id = request.args.get('resident_id', type=int)
+   
+    resident_id = request.args.get('resident_id', type=int)
+    resident = get_resident(resident_id)
+    if not resident:
+        return jsonify({"error": "Resident not found"}), 404
     
     street = request.args.get('street')
     inbox = get_resident_inbox(resident_id, street)
@@ -174,9 +162,6 @@ def api_resident_inbox():
             'created_at': sr.created_at.strftime("%Y-%m-%d %H:%M")
         })
     return jsonify(result), 200
-    '''for sr in inbox:
-        result.append({'id': sr.id, 'street_name': sr.street_name, 'requestee_id': sr.requestee_id, 'drive_id': sr.drive_id, 'created_at': str(sr.created_at)})
-    return jsonify(result)'''
 
 @transport_views.route('/api/transport/list-all', methods=['GET'])
 def api_list_all():
