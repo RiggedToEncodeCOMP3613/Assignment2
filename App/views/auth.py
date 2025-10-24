@@ -77,76 +77,20 @@ def user_login_api():
     set_access_cookies(response, access_token)
     return response, 200
 
-
-# @auth_views.route('/api/login', methods=['POST'])
-# def user_login_api():
-#     data = request.json
-  
-#     username = data.get('username')
-#     password = data.get('password')
-
-#     if not username or not password:
-#         return jsonify(message='Username and password required'), 400
-
-#     user = Resident.query.filter_by(username=username).first()
-#     if not user:
-#         user = Driver.query.filter_by(username=username).first()
-#     if not user:
-#         user = User.query.filter_by(username=username).first()
-    
-#     if not user or not user.check_password(password):
-#         return jsonify(message='Bad username or password given'), 401
-
-#     role = user.__class__.__name__.lower()
-#     #access_token = create_access_token(identity={"id": user.id, "role": role})
-#     access_token = create_access_token(identity=user)
-
-#     '''access_token = create_access_token(
-#         identity={"id": user.id, "role": role}
-#     )'''
-
-#     '''access_token = create_access_token(
-#         identity=user   
-#         #additional_claims={"role": role}   
-#     )'''
-
-#     response = jsonify({
-#         "message": f"Logged in as {role}",
-#         "access_token": access_token,
-#         "role": role
-#     })
-#     set_access_cookies(response, access_token)
-#     return response, 200
-
-  
 @auth_views.route('/api/identify', methods=['GET'])
 @jwt_required()
 def identify_user():
-    identity_raw = get_jwt_identity()
-    
-    # Ensure identity is a dict (decode if necessary)
-    if isinstance(identity_raw, str):
-        try:
-            identity = json.loads(identity_raw)
-        except json.JSONDecodeError:
-            identity = {}
-    else:
-        identity = identity_raw or {}
+    identity = get_jwt_identity() or {}
 
-    username = identity.get('username', 'unknown')
+    username = getattr(current_user, 'username', 'unknown')
     user_id = identity.get('id', 'unknown')
-    role = identity.get('role', 'unknown')
+    role = identity.get('role', current_user.__class__.__name__.lower() if current_user else 'unknown')
 
     return jsonify({
         'message': f"User identified: username={username}, id={user_id}, role={role}"
     }), 200
-'''@auth_views.route('/api/identify', methods=['GET'])
-@jwt_required()
-def identify_user():
-    identity = get_jwt_identity()
-    return jsonify({'message': f"username: {identity.get('username')}, id: {identity.get('id')}"})
-    #return jsonify({'message': f"username: {current_user.username}, id : {current_user.id}"})
-'''
+
+
 @auth_views.route('/api/logout', methods=['GET'])
 def logout_api():
     response = jsonify(message="Logged Out!")
