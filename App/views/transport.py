@@ -27,30 +27,32 @@ def transport_page():
 
 @transport_views.route('/api/transport/options', methods=['GET'])
 def transport_options():
-    data = list_all_data()
-    # return drivers, residents and drives to populate dropdowns with all relevant fields
-    drivers = [
-        {
+    data = list_all_data() or {}
+    print(data)
+
+    drivers = []
+    for d in data.get('drivers', []):
+        # d is a dict, but ensure fallback
+        drivers.append({
             'id': d.get('id'),
-            'username': d.get('username'),
-            'status': d.get('status')
-        }
-        for d in data.get('drivers', [])
-    ]
-    residents = [
-        {
+            'username': d.get('username', 'unknown'),
+            'status': d.get('status', 'unknown')
+        })
+
+    residents = []
+    for r in data.get('residents', []):
+        residents.append({
             'id': r.get('id'),
-            'username': r.get('username'),
+            'username': r.get('username', 'unknown'),
             'name': r.get('name'),
             'street': r.get('street')
-        }
-        for r in data.get('residents', [])
-    ]
+        })
+
     return jsonify({
         'drivers': drivers,
         'residents': residents,
         'drives': data.get('drives', [])
-    })
+    }), 200
 
 @transport_views.route('/api/transport/create-resident', methods=['POST'])
 def api_create_resident():

@@ -85,8 +85,11 @@ def identify_user():
 
     role = current_user.__class__.__name__.lower()
     return jsonify({
-        'message': f"User identified: username={current_user.username}, id={current_user.id}, role={role}"
+        'username': current_user.username,
+        'id': current_user.id,
+        'role': role
     }), 200
+
 
 
 

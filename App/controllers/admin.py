@@ -21,8 +21,18 @@ def list_all_data():
 
     # Drivers
     drivers = db.session.scalars(db.select(Driver)).all()
+    data['drivers'] = []
+    for d in drivers:
+        if not hasattr(d, 'status'):  # safety guard
+            continue
+        data['drivers'].append({
+            'id': d.id,
+            'username': getattr(d, 'username', None),
+            'status': d.status
+        })
+    '''drivers = db.session.scalars(db.select(Driver)).all()
     data['drivers'] = [{'id': d.id, 'status': d.status} for d in drivers]
-
+'''
     # Drives
     drives = db.session.scalars(db.select(Drive)).all()
     def drive_to_dict(dr):
@@ -35,8 +45,18 @@ def list_all_data():
     data['drives'] = [drive_to_dict(dr) for dr in drives]
 
     # Residents
+    # Use safe attribute access (getattr) and include username so callers don't accidentally
+    # try to access attributes on a plain User object if polymorphic loading is not applied.
     residents = db.session.scalars(db.select(Resident)).all()
-    data['residents'] = [{'id': r.id, 'name': r.name, 'street': r.street} for r in residents]
+    data['residents'] = [
+        {
+            'id': getattr(r, 'id', None),
+            'username': getattr(r, 'username', None),
+            'name': getattr(r, 'name', None),
+            'street': getattr(r, 'street', None)
+        }
+        for r in residents
+    ]
 
     # StopRequests (now reference street_name)
     srs = db.session.scalars(db.select(StopRequest)).all()

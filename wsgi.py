@@ -30,7 +30,8 @@ jwt = JWTManager(app)
 @jwt.user_identity_loader
 def user_identity_lookup(user):
     if isinstance(user, dict):
-        return user  # Already in correct form
+        return json.dumps(user)
+        #return user  # Already in correct form
 
     role = "user"
     if isinstance(user, Driver):
@@ -38,11 +39,11 @@ def user_identity_lookup(user):
     elif isinstance(user, Resident):
         role = "resident"
 
-    return {"id": user.id, "role": role}
+    return json.dumps({"id": user.id, "role": role})
 
 @jwt.user_lookup_loader
 def user_lookup_callback(_jwt_header, jwt_data):
-    identity = jwt_data["sub"]  # The dict we stored earlier
+    identity = json.loads(jwt_data["sub"])
     user_id = identity.get("id")
     role = identity.get("role")
 
