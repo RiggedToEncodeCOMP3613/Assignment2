@@ -1,8 +1,8 @@
 # Flask MVC Template
 
 
-[POSTMAN SCRIPT LINK](https://bread-van-a2.postman.co/workspace/Bread-Van-A2-Workspace~86470d11-3416-4272-b2d1-751cf38cc07f/collection/42730042-07a37cd7-1571-4fc4-924d-ad20047b8dfc?action=share&source=copy-link&creator=42730042)
-USE THE PUBBLEZ'S FORK COLLECTION TO RUN.
+[POSTMAN SCRIPT LINK](https://www.postman.com/bread-van-a2/workspace/bread-van-a2-workspace/collection/42730042-07a37cd7-1571-4fc4-924d-ad20047b8dfc?action=share&creator=42730042&active-environment=42730042-cb763b2a-2885-496f-aaef-037885c4224e)
+USE THE BREAD VAN API PUBBLEZ'S FORK COLLECTION TO RUN not the Bread Van API collection.
 
 
 [![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/uwidcit/flaskmvc)  
