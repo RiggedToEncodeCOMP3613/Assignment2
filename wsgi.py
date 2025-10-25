@@ -14,9 +14,19 @@ from App.models import User, Driver, Resident
 from App.database import db, get_migrate
 from App.models import User
 from App.main import create_app
-from App.controllers import ( create_user, get_all_users_json, get_all_users, initialize,
-                              create_resident, create_driver, create_stop_request,
-                              create_drive, get_driver_schedule, get_resident_inbox, print_all_data )
+from App.controllers import (
+    create_user,
+    get_all_users_json,
+    get_all_users,
+    create_resident,
+    create_driver,
+    create_stop_request,
+    create_drive,
+    get_driver_schedule,
+    get_resident_inbox,
+    print_all_data,
+)
+from App.controllers.initialize import initialize as initialize_controller
 from App.controllers.admin import print_users, print_drivers, print_drives, print_residents, print_stop_requests
 
 
@@ -61,7 +71,7 @@ if __name__ == "__main__":
 # This command creates and initializes the database
 @app.cli.command("init", help="Creates and initializes the database")
 def init():
-    initialize()
+    initialize_controller()
     print('database intialized')
 
 '''
