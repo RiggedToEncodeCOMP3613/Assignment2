@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Bread Van App</title>
+<style>
+  :root{
+    --card-w: 320px;
+    --card-h: 380px;
+    --gap: 40px;
+    --border: 2px solid #222;
+    --radius: 10px;
+    font-family: "Segoe UI", Roboto, Arial, sans-serif;
+    color: #111;
+  }
+
+  body{
+    margin:24px;
+    background: #fff;
+  }
+
+  .canvas{
+    position: relative;
+    width: calc(3 * var(--card-w) + 2 * var(--gap));
+    max-width: 100%;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(3, var(--card-w));
+    grid-template-rows: repeat(2, var(--card-h));
+    gap: var(--gap);
+  }
+
+  .card{
+    box-sizing: border-box;
+    width: var(--card-w);
+    height: var(--card-h);
+    border: var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+  }
+
+  .title{
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    text-align: center;
+  }
+
+  .area, .field{
+    border: 1.5px solid #cfcfcf;
+    border-radius: 8px;
+    padding: 10px;
+    min-height: 42px;
+    margin-bottom: 12px;
+    background: #fbfbfb;
+    display:flex;
+    align-items:center;
+  }
+
+  .btn{
+    display: inline-block;
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: 1.5px solid #222;
+    background: transparent;
+    font-weight: 600;
+    cursor: default;
+    margin-bottom: 8px;
+    text-align: center;
+    width: 70%;
+    max-width: 220px;
+  }
+
+  .btn.large {
+    font-size: 16px;
+    padding: 12px 20px;
+    width: 80%;
+  }
+
+  .btn-row {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: auto;
+  }
+
+  .small{
+    font-size: 14px;
+    color:#333;
+  }
+
+  @media (max-width:1100px){
+    .canvas{ transform: scale(0.85); transform-origin: top center; margin-top:10px; }
+  }
+  @media (max-width:760px){
+    .canvas{
+      display:block;
+      width: 100%;
+      transform:none;
+      grid-template-columns: none;
+    }
+    .card{ width: calc(100% - 40px); margin: 20px auto; }
+  }
+</style>
+</head>
+<body>
+
+<h1 style="font-size:20px; text-align:center; margin-bottom:18px;">Bread Van App</h1>
+
+<div class="canvas" id="canvas">
+
+  <!-- Row 1 -->
+  <div class="card" id="login">
+    <div class="title">Bread Van App</div>
+    <div style="height:12px;"></div>
+    <div class="btn-row">
+      <div class="btn">Login as Driver</div>
+      <div class="btn">Login as Resident</div>
+    </div>
+  </div>
+
+  <div class="card" id="driverDash">
+    <div class="title">Welcome, Driver</div>
+    <label class="small">Scheduled Drives</label>
+    <div class="field">Street A, Date, Time</div>
+    <div class="field">Street B, Date, Time</div>
+    <div class="btn-row">
+      <div class="btn large">Schedule New Drive</div>
+    </div>
+  </div>
+
+  <div class="card" id="schedule">
+    <div class="title">Schedule a Drive</div>
+    <label class="small">Street</label>
+    <div class="field">[ input ]</div>
+    <div style="display:flex; gap:10px;">
+      <div style="flex:1">
+        <label class="small">Date</label>
+        <div class="field">[ date ]</div>
+      </div>
+      <div style="flex:1">
+        <label class="small">Time</label>
+        <div class="field">[ time ]</div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <div class="btn large">Submit</div>
+      <div class="btn">Cancel</div>
+    </div>
+  </div>
+
+  <!-- Row 2 -->
+  <div class="card" id="residentDash">
+    <div class="title">Welcome, Resident</div>
+    <label class="small">Upcoming Bread Van Visits</label>
+    <div class="area" style="flex-direction:column; align-items:flex-start;">
+      <div>- Street A, Date, Time</div>
+      <div style="margin-top:6px;">- Street B, Date, Time</div>
+    </div>
+    <div class="btn-row">
+      <div class="btn large">Request Stop</div>
+      <div class="btn">Track Driver</div>
+    </div>
+  </div>
+
+  <div class="card" id="requestStop">
+    <div class="title">Request Stop</div>
+    <label class="small">Street</label>
+    <div class="field">[ input ]</div>
+    <label class="small">Note</label>
+    <div class="field">[ longer text ]</div>
+    <div class="btn-row">
+      <div class="btn large">Submit Request</div>
+      <div class="btn">Cancel</div>
+    </div>
+  </div>
+
+  <div class="card" id="tracker">
+    <div class="title">Driver Tracker</div>
+    <div class="area">Status: On the way</div>
+    <div class="area">Location: Street B (ETA 10m)</div>
+    <div class="btn-row">
+      <div class="btn large">Refresh</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
